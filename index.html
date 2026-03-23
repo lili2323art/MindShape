@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>心理学很火的测试</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+      background: #fef6ee;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .screen { display: none; width: 100%; max-width: 540px; margin: 0 auto; padding: 40px 24px; }
+    .screen.active { display: block; }
+
+    /* ===== 封面 ===== */
+    #intro { text-align: center; }
+    #intro h1 { font-size: 2.4rem; font-weight: 900; letter-spacing: 2px; margin-bottom: 36px; }
+    .shape-row {
+      display: flex; gap: 18px; justify-content: center; align-items: center;
+      background: #fff; border-radius: 16px; padding: 24px 20px; margin-bottom: 32px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.07);
+    }
+    .shape-row svg { width: 60px; height: 60px; }
+    .intro-desc { font-size: 1.05rem; line-height: 2; color: #333; margin-bottom: 40px; }
+    .btn-start {
+      background: #ff4060; color: #fff; border: none; border-radius: 50px;
+      font-size: 1.1rem; font-weight: 700; padding: 14px 56px; cursor: pointer;
+      box-shadow: 0 6px 20px rgba(255,64,96,.35); transition: transform .15s, box-shadow .15s;
+    }
+    .btn-start:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255,64,96,.45); }
+    .btn-start:active { transform: translateY(0); }
+
+    /* ===== 排序页 ===== */
+    #sort-screen h2 { font-size: 1.5rem; font-weight: 800; text-align: center; margin-bottom: 8px; }
+    .sort-hint { text-align: center; color: #888; font-size: .9rem; margin-bottom: 28px; }
+
+    .shape-list {
+      display: flex; flex-direction: column; gap: 14px;
+      user-select: none;
+    }
+
+    .shape-item {
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.07);
+      cursor: grab;
+      transition: box-shadow .2s, transform .2s;
+      touch-action: none;
+    }
+    .shape-item:active { cursor: grabbing; }
+    .shape-item.dragging {
+      opacity: .55;
+      transform: scale(1.03);
+      box-shadow: 0 10px 32px rgba(0,0,0,.18);
+    }
+    .shape-item.over { border: 2px dashed #ff4060; }
+
+    .shape-item svg { width: 52px; height: 52px; flex-shrink: 0; }
+    .shape-name { font-size: 1.1rem; font-weight: 600; flex: 1; }
+    .drag-handle { color: #ccc; font-size: 1.4rem; }
+
+    .rank-badge {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: #ff4060; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .8rem; font-weight: 700; flex-shrink: 0;
+    }
+
+    .btn-result {
+      display: block; width: 100%; margin-top: 32px;
+      background: #ff4060; color: #fff; border: none; border-radius: 50px;
+      font-size: 1.1rem; font-weight: 700; padding: 15px; cursor: pointer;
+      box-shadow: 0 6px 20px rgba(255,64,96,.35); transition: transform .15s;
+    }
+    .btn-result:hover { transform: translateY(-2px); }
+
+    /* ===== 结果页 ===== */
+    #result-screen h2 { font-size: 1.6rem; font-weight: 900; text-align: center; margin-bottom: 32px; }
+
+    .result-card {
+      background: #fff; border-radius: 20px;
+      padding: 22px 24px; margin-bottom: 16px;
+      box-shadow: 0 4px 18px rgba(0,0,0,.07);
+    }
+    .result-card-header {
+      display: flex; align-items: center; gap: 14px; margin-bottom: 10px;
+    }
+    .result-card-header svg { width: 44px; height: 44px; flex-shrink: 0; }
+    .result-label {
+      font-size: .8rem; color: #ff4060; font-weight: 700; letter-spacing: 1px;
+    }
+    .result-value { font-size: 1.15rem; font-weight: 800; }
+    .result-desc { font-size: .95rem; color: #555; line-height: 1.7; }
+
+    .btn-retry {
+      display: block; width: 100%; margin-top: 28px;
+      background: #fff; color: #ff4060; border: 2px solid #ff4060;
+      border-radius: 50px; font-size: 1rem; font-weight: 700; padding: 13px; cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .btn-retry:hover { background: #ff4060; color: #fff; }
+
+    /* Mobile drag helper */
+    .ghost-item {
+      position: fixed; pointer-events: none; z-index: 9999;
+      background: #fff; border-radius: 16px; padding: 16px 20px;
+      display: flex; align-items: center; gap: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,.2);
+      opacity: .9; transform: rotate(2deg);
+    }
+    .ghost-item svg { width: 52px; height: 52px; flex-shrink: 0; }
+    .ghost-item .shape-name { font-size: 1.1rem; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<!-- ===== 封面 ===== -->
+<div id="intro" class="screen active">
+  <h1>心理学很火的测试</h1>
+  <div class="shape-row">
+    <svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="28" fill="#e03030"/></svg>
+    <svg viewBox="0 0 60 60"><polygon points="30,4 56,56 4,56" fill="#2e6fd8"/></svg>
+    <svg viewBox="0 0 60 60"><rect x="6" y="6" width="48" height="48" fill="#2a8a3e"/></svg>
+    <svg viewBox="0 0 60 60"><polygon points="30,4 36,22 56,22 40,34 46,54 30,42 14,54 20,34 4,22 24,22" fill="#e8a020"/></svg>
+    <svg viewBox="0 0 60 60">
+      <path d="M30 54 C14 54 6 44 6 33 C6 18 16 8 30 8 C44 8 54 18 54 33 C54 42 48 50 38 52
+               C34 53 32 50 33 46 C34 42 38 40 38 36 C38 29 33 24 27 24 C21 24 16 29 16 36
+               C16 43 22 48 30 48" stroke="#7b3fb5" stroke-width="5" fill="none" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <p class="intro-desc">
+    按照你的直觉<br>
+    从最喜欢到不喜欢的顺序依次排列这5个图形<br>
+    通过心理投射来反观你的<br>
+    <strong>需求、天赋、状态、能量来源以及逃避</strong>
+  </p>
+  <button class="btn-start" onclick="showSort()">开始测试</button>
+</div>
+
+<!-- ===== 排序页 ===== -->
+<div id="sort-screen" class="screen">
+  <h2>拖动排列你喜欢的顺序</h2>
+  <p class="sort-hint">从上到下：最喜欢 → 最不喜欢</p>
+  <div class="shape-list" id="shapeList"></div>
+  <button class="btn-result" onclick="showResult()">查看我的结果 →</button>
+</div>
+
+<!-- ===== 结果页 ===== -->
+<div id="result-screen" class="screen">
+  <h2>你的专属解析</h2>
+  <div id="resultCards"></div>
+  <button class="btn-retry" onclick="restart()">重新测试</button>
+</div>
+
+<script>
+const SHAPES = [
+  {
+    id: "circle",
+    name: "红色圆形",
+    svg: `<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="28" fill="#e03030"/></svg>`,
+    need:   "独立自主",
+    talent: "自信 · 英雄行为",
+    state:  "努力实现个人独立，尝试掌握主动权",
+    energy: "更多的空间",
+    avoid:  "不想独立，总想依赖他人"
+  },
+  {
+    id: "triangle",
+    name: "蓝色三角",
+    svg: `<svg viewBox="0 0 60 60"><polygon points="30,4 56,56 4,56" fill="#2e6fd8"/></svg>`,
+    need:   "行事有规划",
+    talent: "灵感",
+    state:  "追逐理想，执行计划",
+    energy: "明确的目标",
+    avoid:  "理想主义，总容易先看见困难"
+  },
+  {
+    id: "square",
+    name: "绿色正方形",
+    svg: `<svg viewBox="0 0 60 60"><rect x="6" y="6" width="48" height="48" fill="#2a8a3e"/></svg>`,
+    need:   "真诚 · 言行合一",
+    talent: "责任心 · 执行力",
+    state:  "稳定而有序的生活中",
+    energy: "安全感 · 秩序感",
+    avoid:  "逃避承担责任"
+  },
+  {
+    id: "star",
+    name: "黄色星形",
+    svg: `<svg viewBox="0 0 60 60"><polygon points="30,4 36,22 56,22 40,34 46,54 30,42 14,54 20,34 4,22 24,22" fill="#e8a020"/></svg>`,
+    need:   "社交",
+    talent: "社交能力",
+    state:  "积极拓展社交中",
+    energy: "朋友或团队的合作与帮助",
+    avoid:  "逃避社交 · 宅 · 社恐"
+  },
+  {
+    id: "spiral",
+    name: "紫色螺旋",
+    svg: `<svg viewBox="0 0 60 60"><path d="M50 30 C50 16 40 6 26 6 C12 6 2 16 2 30 C2 44 12 54 26 54 C40 54 50 44 50 30 C50 16 40 6 26 6" stroke="#7b3fb5" stroke-width="6" fill="none" stroke-linecap="round"/></svg>`,
+    need:   "冒险 · 改变当下",
+    talent: "适应力 · 应变能力",
+    state:  "专注改变当下，渴望迎接新生活",
+    energy: "新鲜事物",
+    avoid:  "逃避生活中的变化，安于现状 · 懒惰"
+  }
+];
+
+const RANK_LABELS = ["需求", "天赋", "当前状态", "能量来源", "逃避"];
+const RANK_KEYS   = ["need", "talent", "state", "energy", "avoid"];
+const RANK_COLORS = ["#ff4060", "#ff7a30", "#2e6fd8", "#2a8a3e", "#7b3fb5"];
+
+let order = [0, 1, 2, 3, 4]; // indices into SHAPES
+let dragSrcIdx = null;
+
+function showSort() {
+  document.getElementById("intro").classList.remove("active");
+  document.getElementById("sort-screen").classList.add("active");
+  renderList();
+}
+
+function renderList() {
+  const list = document.getElementById("shapeList");
+  list.innerHTML = "";
+  order.forEach((shapeIdx, rank) => {
+    const s = SHAPES[shapeIdx];
+    const item = document.createElement("div");
+    item.className = "shape-item";
+    item.dataset.rank = rank;
+    item.draggable = true;
+    item.innerHTML = `
+      <div class="rank-badge">${rank + 1}</div>
+      ${s.svg}
+      <span class="shape-name">${s.name}</span>
+      <span class="drag-handle">⠿</span>
+    `;
+    // Desktop drag events
+    item.addEventListener("dragstart", onDragStart);
+    item.addEventListener("dragover",  onDragOver);
+    item.addEventListener("drop",      onDrop);
+    item.addEventListener("dragend",   onDragEnd);
+    // Touch events
+    item.addEventListener("touchstart", onTouchStart, { passive: false });
+    list.appendChild(item);
+  });
+}
+
+// --- Desktop drag ---
+function onDragStart(e) {
+  dragSrcIdx = +e.currentTarget.dataset.rank;
+  e.currentTarget.classList.add("dragging");
+  e.dataTransfer.effectAllowed = "move";
+}
+function onDragOver(e) {
+  e.preventDefault();
+  document.querySelectorAll(".shape-item").forEach(el => el.classList.remove("over"));
+  e.currentTarget.classList.add("over");
+}
+function onDrop(e) {
+  e.preventDefault();
+  const targetIdx = +e.currentTarget.dataset.rank;
+  if (dragSrcIdx !== null && dragSrcIdx !== targetIdx) {
+    const tmp = order[dragSrcIdx];
+    order[dragSrcIdx] = order[targetIdx];
+    order[targetIdx] = tmp;
+    renderList();
+  }
+}
+function onDragEnd(e) {
+  document.querySelectorAll(".shape-item").forEach(el => {
+    el.classList.remove("dragging", "over");
+  });
+  dragSrcIdx = null;
+}
+
+// --- Touch drag ---
+let touchSrcIdx = null;
+let ghost = null;
+let touchOffsetX = 0, touchOffsetY = 0;
+
+function onTouchStart(e) {
+  e.preventDefault();
+  touchSrcIdx = +e.currentTarget.dataset.rank;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const t = e.touches[0];
+  touchOffsetX = t.clientX - rect.left;
+  touchOffsetY = t.clientY - rect.top;
+
+  // Create ghost
+  ghost = document.createElement("div");
+  ghost.className = "ghost-item";
+  const s = SHAPES[order[touchSrcIdx]];
+  ghost.innerHTML = `${s.svg}<span class="shape-name">${s.name}</span>`;
+  ghost.style.left = (rect.left) + "px";
+  ghost.style.top  = (rect.top)  + "px";
+  ghost.style.width = rect.width + "px";
+  document.body.appendChild(ghost);
+
+  document.addEventListener("touchmove",  onTouchMove,  { passive: false });
+  document.addEventListener("touchend",   onTouchEnd);
+}
+
+function onTouchMove(e) {
+  e.preventDefault();
+  const t = e.touches[0];
+  ghost.style.left = (t.clientX - touchOffsetX) + "px";
+  ghost.style.top  = (t.clientY - touchOffsetY) + "px";
+
+  // Highlight target
+  document.querySelectorAll(".shape-item").forEach(el => el.classList.remove("over"));
+  const el = document.elementFromPoint(t.clientX, t.clientY);
+  const item = el && el.closest(".shape-item");
+  if (item) item.classList.add("over");
+}
+
+function onTouchEnd(e) {
+  const t = e.changedTouches[0];
+  const el = document.elementFromPoint(t.clientX, t.clientY);
+  const item = el && el.closest(".shape-item");
+  if (item) {
+    const targetIdx = +item.dataset.rank;
+    if (touchSrcIdx !== null && touchSrcIdx !== targetIdx) {
+      const tmp = order[touchSrcIdx];
+      order[touchSrcIdx] = order[targetIdx];
+      order[targetIdx] = tmp;
+    }
+  }
+  if (ghost) { ghost.remove(); ghost = null; }
+  document.querySelectorAll(".shape-item").forEach(el => el.classList.remove("over"));
+  document.removeEventListener("touchmove", onTouchMove);
+  document.removeEventListener("touchend",  onTouchEnd);
+  touchSrcIdx = null;
+  renderList();
+}
+
+// --- Result ---
+function showResult() {
+  document.getElementById("sort-screen").classList.remove("active");
+  document.getElementById("result-screen").classList.add("active");
+
+  const container = document.getElementById("resultCards");
+  container.innerHTML = "";
+
+  order.forEach((shapeIdx, rank) => {
+    const s = SHAPES[shapeIdx];
+    const key = RANK_KEYS[rank];
+    const label = RANK_LABELS[rank];
+    const color = RANK_COLORS[rank];
+
+    const card = document.createElement("div");
+    card.className = "result-card";
+    card.innerHTML = `
+      <div class="result-card-header">
+        ${s.svg}
+        <div>
+          <div class="result-label" style="color:${color}">第${rank+1}位 · ${label}</div>
+          <div class="result-value">${s[key]}</div>
+        </div>
+      </div>
+      <div class="result-desc">${s.name}排第${rank+1}位：${getDesc(rank, s)}</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function getDesc(rank, s) {
+  const descs = [
+    `你内心最渴望的是「${s.need}」`,
+    `你最突出的天赋是「${s.talent}」`,
+    `你目前的状态：${s.state}`,
+    `你的能量主要来自「${s.energy}」`,
+    `你正在逃避的是：${s.avoid}`
+  ];
+  return descs[rank];
+}
+
+function restart() {
+  order = [0, 1, 2, 3, 4];
+  document.getElementById("result-screen").classList.remove("active");
+  document.getElementById("intro").classList.add("active");
+}
+</script>
+</body>
+</html>
